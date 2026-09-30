@@ -289,7 +289,7 @@
   </style>
 </head>
 <body>
-  <a href="index.html" class="back-link">← Kembali ke Beranda</a>
+  <a href="index.html" class="back-link" id="login-back-link">← Kembali ke Beranda</a>
 
   <div class="login-container">
     <div class="login-header">
@@ -299,6 +299,9 @@
     </div>
 
     <div id="alert-box" class="alert"></div>
+    <div id="demo-mode-notice" class="alert alert-success" style="display: none;">
+      Mode demo aktif. Perubahan hanya tersimpan pada project demo.
+    </div>
 
     <form id="login-form">
       <div class="form-group">
@@ -333,7 +336,7 @@
     <div class="divider">atau</div>
 
     <button class="btn btn-secondary" id="btn-demo-login">
-      🎭 Login Demo (Admin)
+      🎭 Buka Demo Terpisah
     </button>
 
     <div class="forgot-password">
@@ -342,7 +345,8 @@
   </div>
 
   <script type="module">
-    import { loginUser, logoutUser, resetPassword, subscribeToAuthState } from './js/authService.js?v=role-admin-20260930';
+    import { loginUser, logoutUser, resetPassword, subscribeToAuthState } from './js/authService.js?v=demo-separation-20260930';
+    import { isDemoMode, pageHref } from './js/demoMode.js?v=demo-separation-20260930';
 
     const loginForm = document.getElementById('login-form');
     const emailInput = document.getElementById('email');
@@ -351,6 +355,11 @@
     const btnDemoLogin = document.getElementById('btn-demo-login');
     const btnForgotPassword = document.getElementById('btn-forgot-password');
     const alertBox = document.getElementById('alert-box');
+    const demoModeNotice = document.getElementById('demo-mode-notice');
+    const backLink = document.getElementById('login-back-link');
+    if (demoModeNotice) demoModeNotice.style.display = isDemoMode ? 'block' : 'none';
+    if (backLink) backLink.href = pageHref('index.html');
+    btnDemoLogin.textContent = isDemoMode ? '🎭 Masuk dengan Akun Demo' : '🎭 Buka Demo Terpisah';
 
     function showAlert(message, type = 'error') {
       alertBox.textContent = message;
@@ -375,7 +384,7 @@
 
     subscribeToAuthState(async (user) => {
       if (user) {
-        window.location.href = 'index.html';
+        window.location.href = pageHref('index.html');
       }
     });
 
@@ -397,7 +406,7 @@
         await loginUser(email, password);
         showAlert('Login berhasil! Mengalihkan...', 'success');
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = pageHref('index.html');
         }, 1000);
       } catch (error) {
         console.error('Login error:', error);
@@ -422,19 +431,14 @@
     });
 
     btnDemoLogin.addEventListener('click', async () => {
-      setLoading(true);
-      
-      try {
-        await loginUser('demo@tendarental.id', 'demo123');
-        showAlert('Login demo berhasil!', 'success');
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 1000);
-      } catch (error) {
-        console.error('Demo login error:', error);
-        showAlert('Akun demo belum tersedia. Silakan register terlebih dahulu di Firebase Console.');
-        setLoading(false);
+      if (!isDemoMode) {
+        window.location.href = 'demo.html';
+        return;
       }
+
+      if (!emailInput.value.trim()) emailInput.value = 'demo@tendarental.id';
+      passwordInput.focus();
+      showAlert('Masukkan kata sandi akun demo yang dibuat di Firebase project demo.', 'success');
     });
 
     btnForgotPassword.addEventListener('click', async (e) => {

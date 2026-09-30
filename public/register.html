@@ -322,6 +322,7 @@
     </div>
 
     <div id="alert-box" class="alert"></div>
+    <div id="demo-mode-notice" class="info-box" style="display: none;">Mode demo aktif. User baru dibuat di project demo.</div>
 
     <div class="info-box">
       ⚠️ Halaman ini hanya untuk menambahkan user admin dan staff. Pastikan Anda memiliki akses administrasi yang tepat.
@@ -385,17 +386,18 @@
 
     <div class="divider">atau</div>
 
-    <button class="btn btn-secondary" id="btn-back" onclick="window.location.href='login.html'">
+    <button class="btn btn-secondary" id="btn-back">
       ← Kembali ke Login
     </button>
 
     <div class="back-link">
-      <a href="index.html">← Kembali ke Beranda</a>
+      <a href="index.html" id="register-home-link">← Kembali ke Beranda</a>
     </div>
   </div>
 
   <script type="module">
-    import { registerUser, subscribeToAuthState } from './js/authService.js?v=role-admin-20260930';
+    import { registerUser, subscribeToAuthState } from './js/authService.js?v=demo-separation-20260930';
+    import { isDemoMode, pageHref } from './js/demoMode.js?v=demo-separation-20260930';
 
     const registerForm = document.getElementById('register-form');
     const namaInput = document.getElementById('nama');
@@ -404,10 +406,15 @@
     const passwordConfirmInput = document.getElementById('password-confirm');
     const btnRegister = document.getElementById('btn-register');
     const alertBox = document.getElementById('alert-box');
+    document.getElementById('demo-mode-notice').style.display = isDemoMode ? 'block' : 'none';
+    document.getElementById('btn-back').addEventListener('click', () => {
+      window.location.href = pageHref('login.html');
+    });
+    document.getElementById('register-home-link').href = pageHref('index.html');
 
     subscribeToAuthState((user) => {
       if (user) {
-        window.location.href = 'index.html';
+        window.location.href = pageHref('index.html');
       }
     });
 
@@ -462,7 +469,7 @@
         registerForm.reset();
         
         setTimeout(() => {
-          window.location.href = 'login.html';
+          window.location.href = pageHref('login.html');
         }, 2000);
       } catch (error) {
         console.error('Register error:', error);

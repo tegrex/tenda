@@ -1,4 +1,4 @@
-import { db } from "./firebase.js";
+import { db } from "./firebase.js?v=demo-separation-20260930";
 import { 
   collection, 
   doc, 

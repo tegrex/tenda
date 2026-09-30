@@ -52,6 +52,7 @@ build/Release
 # Dependency directories
 node_modules/
 public/file.jpe
+tendarental demo firebase.txt
 
 # Optional npm cache directory
 .npm

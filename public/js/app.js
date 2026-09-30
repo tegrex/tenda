@@ -12,7 +12,7 @@ import {
   SAMPLE_TEMPLATES,
   seedSampleInventaris,
   EVENT_PACKAGES
-} from "./stockService.js?v=public-event-packages-20260930-v2";
+} from "./stockService.js?v=demo-separation-20260930";
 import { 
   subscribeToAuthState, 
   createManagedUser,
@@ -22,10 +22,11 @@ import {
   hasPermission,
   listManagedUsers,
   updateManagedUserStatus
-} from "./authService.js?v=role-admin-20260930";
+} from "./authService.js?v=demo-separation-20260930";
 import { showSuccess, showError, showWarning, showInfo } from "./toast.js";
-import { initWorkersAndSPK, stopWorkersAndSPK, setupWorkersEventListeners, printInvoice } from "./workersModule.js?v=role-admin-20260930";
-import { createAnnualReportPdf, createDetailedReportPdf, shareOrDownloadPdf } from "./pdfReports.js?v=role-admin-20260930";
+import { initWorkersAndSPK, stopWorkersAndSPK, setupWorkersEventListeners, printInvoice } from "./workersModule.js?v=demo-separation-20260930";
+import { createAnnualReportPdf, createDetailedReportPdf, shareOrDownloadPdf } from "./pdfReports.js?v=demo-separation-20260930";
+import { isDemoMode, pageHref } from "./demoMode.js?v=demo-separation-20260930";
 
 // Domestic currency formatter
 const formatRupiah = (val) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val || 0);
@@ -62,6 +63,7 @@ const userDisplayName = document.getElementById("user-display-name");
 const pageFrontpage = document.getElementById("page-frontpage");
 const pageKatalog = document.getElementById("page-katalog");
 const pageDashboard = document.getElementById("page-dashboard");
+const demoEnvironmentBanner = document.getElementById("demo-environment-banner");
 
 const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
 const navLinks = document.getElementById("nav-links");
@@ -216,7 +218,7 @@ function initEventListeners() {
   });
   btnHeroAdmin?.addEventListener("click", () => {
     if (!currentUser) {
-      window.location.href = "login.html";
+      window.location.href = pageHref("login.html");
       return;
     }
     if (!checkPermission("create")) {
@@ -233,7 +235,7 @@ function initEventListeners() {
 
   // Auth Listeners
   btnLogin?.addEventListener("click", () => {
-    window.location.href = "login.html";
+    window.location.href = pageHref("login.html");
   });
   btnLogout?.addEventListener("click", handleLogout);
 
@@ -264,7 +266,7 @@ function initEventListeners() {
   mobileFabSewa?.addEventListener("click", () => {
     if (!currentUser) {
       alert("Silakan login untuk membuat transaksi sewa.");
-      window.location.href = "login.html";
+      window.location.href = pageHref("login.html");
       return;
     }
     openModalSewa();
@@ -491,7 +493,7 @@ async function handleLogout() {
   if (confirm("Apakah Anda yakin ingin keluar?")) {
     try {
       await logoutUser();
-      window.location.href = "index.html";
+      window.location.href = pageHref("index.html");
     } catch (err) {
       alert("Gagal logout: " + err.message);
     }
@@ -757,7 +759,7 @@ function switchPageView(page) {
     // Check permission before allowing access to dashboard
     if (!currentUser) {
       showError("Silakan login untuk mengakses dashboard admin.");
-      window.location.href = "login.html";
+      window.location.href = pageHref("login.html");
       return;
     }
     
@@ -2329,6 +2331,7 @@ function escapeHtml(str) {
 }
 
 function startApplication() {
+  if (demoEnvironmentBanner) demoEnvironmentBanner.hidden = !isDemoMode;
   initEventListeners();
   initAuthState();
   setupWorkersEventListeners();

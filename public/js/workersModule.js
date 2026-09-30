@@ -1,5 +1,5 @@
 import { showSuccess, showError, showWarning, showInfo } from "./toast.js";
-import { createSpkPdf, shareOrDownloadPdf } from "./pdfReports.js?v=role-admin-20260930";
+import { createSpkPdf, shareOrDownloadPdf } from "./pdfReports.js?v=demo-separation-20260930";
 import { 
   listenPekerja, 
   tambahPekerja, 
@@ -12,7 +12,7 @@ import {
   seedSamplePekerja,
   clearSamplePekerja,
   SAMPLE_PEKERJA
-} from "./stockService.js?v=role-admin-20260930";
+} from "./stockService.js?v=demo-separation-20260930";
 
 const formatRupiah = (val) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val || 0);
 

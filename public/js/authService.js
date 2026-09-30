@@ -1,4 +1,4 @@
-import { auth, db, firebaseConfig } from "./firebase.js?v=role-admin-20260930";
+import { auth, db, firebaseConfig } from "./firebase.js?v=demo-separation-20260930";
 import { deleteApp, initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
   signInWithEmailAndPassword,
