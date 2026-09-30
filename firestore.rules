@@ -1,0 +1,151 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasActiveProfileRole(roles) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', 'active') == 'active' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') in roles;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.get('role', '') == 'admin' ||
+        hasActiveProfileRole(['admin'])
+      );
+    }
+    
+    function isStaff() {
+      return isAuthenticated() && (
+        request.auth.token.get('role', '') in ['admin', 'staff'] ||
+        hasActiveProfileRole(['admin', 'staff'])
+      );
+    }
+
+    function isWorker() {
+      return hasActiveProfileRole(['pekerja']);
+    }
+
+    function isAssignedWorker() {
+      return isWorker() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('workerId', '') in
+        resource.data.get('workerIds', []);
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isFirstUser() {
+      // Allow jika collection users masih kosong (untuk user pertama)
+      return !exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Check if users collection is empty (for initial admin creation)
+    function isUsersCollectionEmpty() {
+      return !exists(/databases/$(database)/documents/users) || 
+             resource == null ||
+             resource.data == null;
+    }
+
+    // ----------------------------------------------------
+    // USERS COLLECTION
+    // - Public self-registration can only create staff accounts
+    // - Admins can create and manage accounts
+    // - Users cannot change their own role or status
+    // ----------------------------------------------------
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if (
+        isAdmin() &&
+        request.resource.data.uid == userId &&
+        request.resource.data.role in ['admin', 'staff', 'pekerja'] &&
+        request.resource.data.status == 'active'
+      ) || (
+        isOwner(userId) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.role == 'staff' &&
+        request.resource.data.status == 'active'
+      );
+      allow update: if (
+        isAdmin() && userId != request.auth.uid &&
+        request.resource.data.role in ['admin', 'staff', 'pekerja'] &&
+        request.resource.data.status in ['active', 'inactive']
+      ) || (
+        isOwner(userId) &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nama', 'lastLogin'])
+      );
+      allow delete: if false;
+    }
+
+    // ----------------------------------------------------
+    // INVENTARIS COLLECTION (Barang/Stock)
+    // - Public can read (for catalog)
+    // - Only authenticated staff can create/update
+    // - Only admins can delete
+    // ----------------------------------------------------
+    match /inventaris/{itemId} {
+      // Public read allowed for catalog display
+      allow read: if true;
+      
+      // Create & Update: staff/admin
+      allow create, update: if isStaff();
+      
+      // Delete: admin only
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // PENYEWAAN COLLECTION (Transactions)
+    // - Authenticated users can read all transactions
+    // - Only admins can delete
+    // ----------------------------------------------------
+    match /penyewaan/{rentalId} {
+      // Read and write: staff/admin
+      allow read: if isStaff();
+      
+      allow create, update: if isStaff();
+      
+      // Delete: admin only
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // WORKERS AND WORK ORDERS
+    // - Authenticated users can read
+    // - Staff and admins can create/update
+    // - Only admins can delete
+    // ----------------------------------------------------
+    match /pekerja/{workerId} {
+      allow read: if isStaff() || (isWorker() && resource.data.authUid == request.auth.uid);
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    match /spk/{spkId} {
+      allow read: if isStaff() || isAssignedWorker();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // Allow creating users collection at root level
+    match /users {
+      allow read: if false;
+    }
+
+    // ----------------------------------------------------
+    // FALLBACK - Deny all other collections
+    // ----------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
